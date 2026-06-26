@@ -1,0 +1,15 @@
+name: Build dylib
+on: [push]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: |
+          clang -arch arm64 -fobjc-arc -dynamiclib -O2 -framework Foundation -framework CFNetwork -o LeitingBypass.dylib LeitingBypass.m
+      - name: Upload dylib
+        uses: actions/upload-artifact@v3
+        with:
+          name: LeitingBypass.dylib
+          path: LeitingBypass.dylib
