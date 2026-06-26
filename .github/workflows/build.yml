@@ -7,29 +7,34 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build for iOS
         run: |
-          # 显式指定 iOS SDK 路径
-          SDK=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+          # 使用 xcrun 自动找到 iOS SDK
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null)
+          echo "SDK path: $SDK"
           
-          # 如果默认路径不存在，找一下
-          if [ ! -d "$SDK" ]; then
-            SDK=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null)
+          if [ -z "$SDK" ]; then
+            echo "No iOS SDK found, trying alternative..."
+            # 找 Xcode 中的 SDK
+            SDK=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
           fi
           
           echo "Using SDK: $SDK"
+          ls -la "$SDK" 2>/dev/null || echo "SDK not found!"
           
-          clang -arch arm64 \
+          # 编译
+          xcrun -sdk iphoneos clang \
+                -arch arm64 \
                 -fobjc-arc \
                 -dynamiclib \
                 -O2 \
-                -isysroot "$SDK" \
                 -miphoneos-version-min=12.0 \
                 -framework Foundation \
                 -framework CFNetwork \
                 -o LeitingBypass.dylib \
                 LeitingBypass.m
                 
-          # 验证平台
+          # 检查结果
           file LeitingBypass.dylib
+          otool -l LeitingBypass.dylib | grep -A4 LC_BUILD_VERSION
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
